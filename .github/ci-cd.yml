@@ -1,0 +1,33 @@
+name: PQ-Crosschain CI/CD
+on: [push, pull_request]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Rust + eBPF
+        run: |
+          rustup toolchain install stable --component llvm-tools-preview
+          cargo install cargo-bpf
+          cargo build --release
+      - name: Run Anchor Tests
+        run: cd anchor && anchor test --bpf-program pqc_bridge target/deploy/pqc_bridge.so
+      - name: Compile Plutus Validator
+        uses: input-output-hk/plutus-action@v1.2.0
+        with:
+          haskell-version: '9.4.7'
+          script-path: cardano/src/PQCValidator.hs
+      - name: Benchmark PQC Ops
+        run: cargo bench --bench pqc_benchmarks
+
+  deploy:
+    needs: build-test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy Anchor Program
+        run: cd anchor && anchor deploy --provider.cluster devnet
+      - name: Start Relayer (Docker)
+        run: docker-compose up -d relayer prometheus
