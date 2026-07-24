@@ -1,0 +1,18 @@
+[package]
+description = "Post-Quantum Cross-Chain Bridge Verifier"
+name = "pqc_bridge"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "pqc_bridge"
+
+depends = [
+    "anchor-lang",
+]
+
+[dependencies]
+anchor-lang = "0.30"
+spl-token-2022 = "4.0"
+borsh = "1.5"
